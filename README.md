@@ -1,18 +1,45 @@
-Django-Cascade-Delete
+Django Cascade Delete
 =====================
 
 Test Django project used to explore transaction handling in model deletions.
 
 There has been some discussion within the YunoJuno development team about
 the use of signals within the Django model ORM framework, whether it's
-good practice, or even safe.
+good practice, or even safe to rely on, when processing side-effects.
 
 The primary use case is the cascading deletion of models, and how this is
-handled internally by the Django ORM. An initial investigation of the Django
-source suggested that when calling the `delete()` method of a top-level
-object (one that is a parent of a child object), the child's `delete` method
-is never called, but its `pre_save` and `post_save` signals are. This
-project is a test app used to explore this in more detail.
+handled internally by the Django ORM. An initial investigation of the [Django
+source](https://github.com/django/django/blob/master/django/db/models/deletion.py#L242)
+suggested that when calling the `delete` method of a top-level object 
+(one that is a parent of a child object), the child's `delete` method
+is never called, but its `pre_save` and `post_save` signals are:
+
+```python
+def delete(self):
+    [...]
+    # send pre_delete signals
+    for model, obj in self.instances_with_model():
+        [...]
+        signals.pre_delete.send([...])
+
+    [...]
+
+    # delete instances
+    for model, instances in six.iteritems(self.data):
+        query = sql.DeleteQuery(model)
+        [...]
+        for obj in instances:
+            signals.post_delete.send([...])
+    [...]
+```
+
+The open question is where to put code that needs to run when an object is
+deleted, but not directly (i.e. as part of a cascade). For instance, if
+you need to delete other objects, that are *not* part of the implicit
+cascade delete, should you put that code into the child model's `delete`
+method, or in a signal receiver?
+
+This project is a test app used to explore this in more detail.
 
 It consists of a simple Django app with two models - Parent, and Child.
 The Child model has a ForeignKey relationship to the Parent model. There
@@ -35,7 +62,7 @@ $ python manage.py test --verbosity=2
 
 ##Spoiler
 
-This is the output from calling `delete()` on an object with three child objects:
+This is the output from calling `delete` on an object with three child objects:
 
 ```python
 >>> parent = Parent(name=u"Fred")
@@ -56,44 +83,17 @@ DEBUG Deleted Parent: Fred.
 DEBUG Exit Parent.delete() method.
 ```
 
-Some interesting points from above:
+This confirms the observations from the source code above:
 
-* The `Child.delete()` method is never called, but
-* Child objects *are* deleted, and
-* Child objects are deleted in order
+* Child objects' `pre_save` signals are fired
+* The Child objects' `delete` methods are **not** called
+* Child objects' `post_save` signales are fired
 * Parent `pre_save` signal is fired *after* all child `pre_save` signals
 
-##Source
+##Django Source
 
-The Django source is freely available on [Github](https://github.com/django/django/), and the relevant code for the ORM cascade `delete` is in the [django.db.models.deletion.Collector](https://github.com/django/django/blob/master/django/db/models/deletion.py#L242) class (code truncated for clarity):
+The Django source is freely available on [Github](https://github.com/django/django/), and the relevant code for the ORM cascade `delete` is in the [django.db.models.deletion.Collector](https://github.com/django/django/blob/master/django/db/models/deletion.py#L242) class.
 
-```python
-def delete(self):
-    [...]
-    with transaction.commit_on_success_unless_managed(using=self.using):
-        # send pre_delete signals
-        for model, obj in self.instances_with_model():
-            if not model._meta.auto_created:
-                signals.pre_delete.send(
-                    sender=model, instance=obj, using=self.using
-                )
-        [...]
-
-        # reverse instance collections
-        for instances in six.itervalues(self.data):
-            instances.reverse()
-
-        # delete instances
-        for model, instances in six.iteritems(self.data):
-            query = sql.DeleteQuery(model)
-            [...]
-            if not model._meta.auto_created:
-                for obj in instances:
-                    signals.post_delete.send(
-                        sender=model, instance=obj, using=self.using
-                    )
-    [...]
-```
 
 ##Prerequisites
 
