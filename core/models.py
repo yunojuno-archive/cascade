@@ -29,16 +29,16 @@ class Parent(models.Model):
 @receiver(models.signals.pre_delete, sender=Parent)
 def _parent_pre_delete(sender, instance, **kwargs):
     """Parent model pre_delete signal receiver."""
-    logger.debug(u"Deleting Parent object, id=%i.", instance.id)
+    logger.debug(u"Deleting %s", instance)
     if instance.name == "Job":
-        logger.error("Job's an unlucky name, can't delete parent, id=%i.", instance.id)
+        logger.error("Job's an unlucky name, can't delete %s.", instance)
         raise Exception(u"Job was a very unlucky man.")
 
 
 @receiver(models.signals.post_delete, sender=Parent)
 def _parent_post_delete(sender, instance, **kwargs):
     """Parent model post_delete signal receiver."""
-    logger.debug(u"Deleted Parent object, id=#%i.", instance.id)
+    logger.debug(u"Deleted %s.", instance)
 
 
 class Child(models.Model):
@@ -61,16 +61,16 @@ class Child(models.Model):
 
 @receiver(models.signals.pre_delete, sender=Child)
 def _child_pre_delete(sender, instance, **kwargs):
-    logger.debug(u"Deleting Child object, id=%i.", instance.id)
+    logger.debug(u"Deleting %s.", instance)
     if instance.name == "Job":
-        logger.error("Job's an unlucky name, can't delete child, id=%i.", instance.id)
+        logger.error("Job's an unlucky name, can't delete %s.", instance)
         raise Exception(u"Job was a very unlucky man.")
 
 
 @receiver(models.signals.post_delete, sender=Child)
 def _child_post_delete(sender, instance, **kwargs):
     """Child model post_delete signal receiver."""
-    logger.debug(u"Deleted Child object, id=#%i.", instance.id)
+    logger.debug(u"Deleted %s.", instance)
     if instance.name == "Baby":
         logger.warning(u"No one puts Baby in the corner - deleting everything.")
         Unrelated.objects.all().delete()
