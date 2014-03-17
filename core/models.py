@@ -71,3 +71,17 @@ def _child_pre_delete(sender, instance, **kwargs):
 def _child_post_delete(sender, instance, **kwargs):
     """Child model post_delete signal receiver."""
     logger.debug(u"Deleted Child object, id=#%i.", instance.id)
+    if instance.name == "Baby":
+        logger.warning(u"No one puts Baby in the corner - deleting everything.")
+        Unrelated.objects.all().delete()
+
+
+class Unrelated(models.Model):
+    """Model used to verify database interactions unrelated to Parent-Child relationship."""
+    name = models.CharField(max_length=50)
+
+    def __unicode__(self):
+        return u"Unrelated: %s" % (self.name)
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')

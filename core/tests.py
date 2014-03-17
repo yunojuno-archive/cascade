@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.test import TestCase
 
-from core.models import Parent, Child
+from core.models import Parent, Child, Unrelated
 
 
 class CascadeDeleteTests(TestCase):
@@ -45,3 +45,24 @@ class CascadeDeleteTests(TestCase):
         # confirm that nothing has been deleted
         self.assertTrue(Parent.objects.exists())
         self.assertEqual(Child.objects.count(), 1)
+
+    def test_delete_everything(self):
+        """Call the parent.delete() and fail on parent deletion."""
+        Child(name="Baby", parent=self.parent).save()
+        Unrelated(name="Igor").save()
+        self.parent.delete()
+        # confirm that everything has been deleted.
+        self.assertFalse(Parent.objects.exists())
+        self.assertFalse(Child.objects.exists())
+        self.assertFalse(Unrelated.objects.exists())
+
+    def test_delete_everything_fail(self):
+        """Call the parent.delete() and fail on parent deletion."""
+        Child(name="Baby", parent=self.parent).save()
+        Child(name="Job", parent=self.parent).save()
+        Unrelated(name="Igor").save()
+        self.assertRaises(Exception, self.parent.delete)
+        # confirm that everything has been deleted.
+        self.assertTrue(Parent.objects.exists())
+        self.assertTrue(Child.objects.exists())
+        self.assertTrue(Unrelated.objects.exists())
