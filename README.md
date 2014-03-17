@@ -1,5 +1,5 @@
-Django-Cascade
-==============
+Django-Cascade-Delete
+=====================
 
 Test Django project used to explore transaction handling in model deletions.
 
@@ -37,21 +37,31 @@ $ python manage.py test --verbosity=2
 
 This is the output from calling `delete()` on an object with three child objects:
 
-    >>> parent = Parent(name=u"Fred")
-    >>> parent.save()
-    >>> Child(name=u"Bob", parent=parent).save()
-    >>> Child(name=u"Gob", parent=parent).save()
-    >>> Child(name=u"Lob", parent=parent).save()
-    >>> parent.delete()
-    DEBUG Enter Parent.delete() method.
-    DEBUG Deleting Child: Bob.  # pre_save
-    DEBUG Deleting Child: Gob.
-    DEBUG Deleting Child: Lob.
-    DEBUG Deleting Parent: Fred.
-    DEBUG Deleted Child: Lob.  # post_save
-    DEBUG Deleted Child: Gob.
-    DEBUG Deleted Child: Bob.
-    DEBUG Exit Parent.delete() method.
+```python
+>>> parent = Parent(name=u"Fred")
+>>> parent.save()
+>>> Child(name=u"Bob", parent=parent).save()
+>>> Child(name=u"Gob", parent=parent).save()
+>>> Child(name=u"Lob", parent=parent).save()
+>>> parent.delete()
+DEBUG Enter Parent.delete() method.
+DEBUG Deleting Child: Bob.  # pre_save
+DEBUG Deleting Child: Gob.
+DEBUG Deleting Child: Lob.
+DEBUG Deleting Parent: Fred.
+DEBUG Deleted Child: Lob.  # post_save
+DEBUG Deleted Child: Gob.
+DEBUG Deleted Child: Bob.
+DEBUG Deleted Parent: Fred.
+DEBUG Exit Parent.delete() method.
+```
+
+Some interesting points from above:
+
+* The `Child.delete()` method is never called, but
+* Child objects *are* deleted, and
+* Child objects are deleted in order
+* Parent `pre_save` signal is fired *after* all child `pre_save` signals
 
 ##Prerequisites
 
