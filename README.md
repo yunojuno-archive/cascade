@@ -35,19 +35,22 @@ $ python manage.py test --verbosity=2
 
 ##Spoiler
 
-This is the output from calling `delete()` on an object with four child objects:
+This is the output from calling `delete()` on an object with three child objects:
 
+    >>> parent = Parent(name=u"Fred")
+    >>> parent.save()
+    >>> Child(name=u"Bob", parent=parent).save()
+    >>> Child(name=u"Gob", parent=parent).save()
+    >>> Child(name=u"Lob", parent=parent).save()
+    >>> parent.delete()
     DEBUG Enter Parent.delete() method.
-    DEBUG Deleting Child object, id=1.  # pre_save
-    DEBUG Deleting Child object, id=2.
-    DEBUG Deleting Child object, id=3.
-    DEBUG Deleting Child object, id=4.
-    DEBUG Deleting Parent object, id=1.
-    DEBUG Deleted Child object, id=#4.  # post_save
-    DEBUG Deleted Child object, id=#3.
-    DEBUG Deleted Child object, id=#2.
-    DEBUG Deleted Child object, id=#1.
-    DEBUG Deleted Parent object, id=#1.
+    DEBUG Deleting Child: Bob.  # pre_save
+    DEBUG Deleting Child: Gob.
+    DEBUG Deleting Child: Lob.
+    DEBUG Deleting Parent: Fred.
+    DEBUG Deleted Child: Lob.  # post_save
+    DEBUG Deleted Child: Gob.
+    DEBUG Deleted Child: Bob.
     DEBUG Exit Parent.delete() method.
 
 ##Prerequisites
