@@ -63,6 +63,38 @@ Some interesting points from above:
 * Child objects are deleted in order
 * Parent `pre_save` signal is fired *after* all child `pre_save` signals
 
+##Source
+
+The Django source is freely available on [Github](https://github.com/django/django/), and the relevant code for the ORM cascade `delete` is in the [django.db.models.deletion.Collector](https://github.com/django/django/blob/master/django/db/models/deletion.py#L242) class (code truncated for clarity):
+
+```python
+def delete(self):
+    [...]
+    with transaction.commit_on_success_unless_managed(using=self.using):
+        # send pre_delete signals
+        for model, obj in self.instances_with_model():
+            if not model._meta.auto_created:
+                signals.pre_delete.send(
+                    sender=model, instance=obj, using=self.using
+                )
+        [...]
+
+        # reverse instance collections
+        for instances in six.itervalues(self.data):
+            instances.reverse()
+
+        # delete instances
+        for model, instances in six.iteritems(self.data):
+            query = sql.DeleteQuery(model)
+            [...]
+            if not model._meta.auto_created:
+                for obj in instances:
+                    signals.post_delete.send(
+                        sender=model, instance=obj, using=self.using
+                    )
+    [...]
+```
+
 ##Prerequisites
 
 There is a `requirements.txt` file that contains the project dependencies.
