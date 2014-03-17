@@ -26,6 +26,16 @@ class CascadeDeleteTests(TestCase):
         self.assertFalse(Parent.objects.exists())
         self.assertFalse(Child.objects.exists())
 
+    def test_delete_parent_cascade_multiple(self):
+        """Call the parent.delete() method with many children."""
+        Child(name=u"Bob", parent=self.parent).save()
+        Child(name=u"Gob", parent=self.parent).save()
+        Child(name=u"Lob", parent=self.parent).save()
+        self.parent.delete()
+        # confirm that child has been deleted has been deleted
+        self.assertFalse(Parent.objects.exists())
+        self.assertFalse(Child.objects.exists())
+
     def test_delete_parent_child_fail(self):
         """Call the parent.delete() and fail on a child delete."""
         Child(name=u"Bob", parent=self.parent).save()
