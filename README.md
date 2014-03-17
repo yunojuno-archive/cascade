@@ -12,7 +12,7 @@ handled internally by the Django ORM. An initial investigation of the [Django
 source](https://github.com/django/django/blob/master/django/db/models/deletion.py#L242)
 suggested that when calling the `delete` method of a top-level object 
 (one that is a parent of a child object), the child's `delete` method
-is never called, but its `pre_save` and `post_save` signals are:
+is never called, but its `pre_delete` and `post_delete` signals are:
 
 ```python
 def delete(self):
@@ -43,9 +43,9 @@ This project is a test app used to explore this in more detail.
 
 It consists of a simple Django app with two models - Parent, and Child.
 The Child model has a ForeignKey relationship to the Parent model. There
-are `pre_save` and `post_save` signal receive handlers for both models.
+are `pre_delete` and `post_delete` signal receive handlers for both models.
 
-In both `pre_save` handlers, if the `name` attribute of the model is "Job"
+In both `pre_delete` handlers, if the `name` attribute of the model is "Job"
 an exception is raised. This is used to force the rollback of any containing
 transactions, so that, in theory, if you call `parent.delete()` on a Parent
 object that has a Child object with `name=="Job"`, the entire transaction
@@ -72,11 +72,11 @@ This is the output from calling `delete` on an object with three child objects:
 >>> Child(name=u"Lob", parent=parent).save()
 >>> parent.delete()
 DEBUG Enter Parent.delete() method.
-DEBUG Deleting Child: Bob.  # pre_save
+DEBUG Deleting Child: Bob.  # pre_delete signal
 DEBUG Deleting Child: Gob.
 DEBUG Deleting Child: Lob.
 DEBUG Deleting Parent: Fred.
-DEBUG Deleted Child: Lob.  # post_save
+DEBUG Deleted Child: Lob.  # post_delete signal
 DEBUG Deleted Child: Gob.
 DEBUG Deleted Child: Bob.
 DEBUG Deleted Parent: Fred.
@@ -85,10 +85,10 @@ DEBUG Exit Parent.delete() method.
 
 This confirms the observations from the source code above:
 
-* Child objects' `pre_save` signals are fired
+* Child objects' `pre_delete` signals are fired
 * The Child objects' `delete` methods are **not** called
-* Child objects' `post_save` signales are fired
-* Parent `pre_save` signal is fired *after* all child `pre_save` signals
+* Child objects' `post_delete` signales are fired
+* Parent signals are fired *after* related child signals
 
 ##Django Source
 
